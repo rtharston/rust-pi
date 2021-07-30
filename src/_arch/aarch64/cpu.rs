@@ -1,23 +1,26 @@
-//! Architectural boot code.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+//
+// Copyright (c) 2018-2021 Andre Richter <andre.o.richter@gmail.com>
+
+//! Architectural processor code.
 //!
 //! # Orientation
 //!
 //! Since arch modules are imported into generic modules using the path attribute, the path of this
 //! file is:
 //!
-//! crate::cpu::boot::arch_boot
+//! crate::cpu::arch_cpu
 
-// Assembly counterpart to this file.
-global_asm!(include_str!("boot.s"));
+use cortex_a::asm;
 
 //--------------------------------------------------------------------------------------------------
 // Public Code
 //--------------------------------------------------------------------------------------------------
 
-/// The Rust entry of the `kernel` binary.
-///
-/// The function is called from the assembly `_start` function.
-#[no_mangle]
-pub unsafe fn _start_rust() -> ! {
-    crate::kernel_init()
+/// Pause execution on the core.
+#[inline(always)]
+pub fn wait_forever() -> ! {
+    loop {
+        asm::wfe()
+    }
 }

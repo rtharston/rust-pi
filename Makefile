@@ -4,7 +4,7 @@
 ##
 ## I, Reed, only kept the bits that made sense for my goals for my OS
 
-include color.mk.in
+include common/color.mk.in
 
 ##--------------------------------------------------------------------------------------------------
 ## Optional, user-provided configuration values
@@ -24,7 +24,7 @@ TARGET            = aarch64-unknown-none-softfloat
 KERNEL_BIN        = kernel8.img
 QEMU_BINARY       = qemu-system-aarch64
 QEMU_MACHINE_TYPE = raspi3
-QEMU_RELEASE_ARGS = -d in_asm -display none
+QEMU_RELEASE_ARGS = -serial stdio -display none
 OBJDUMP_BINARY    = aarch64-none-elf-objdump
 NM_BINARY         = aarch64-none-elf-nm
 READELF_BINARY    = aarch64-none-elf-readelf
@@ -56,16 +56,19 @@ OBJCOPY_CMD = rust-objcopy \
     -O binary
 
 EXEC_QEMU = $(QEMU_BINARY) -M $(QEMU_MACHINE_TYPE)
+EXEC_TEST_DISPATCH = ruby common/tests/dispatch.rb
 
 ##------------------------------------------------------------------------------
 ## Dockerization
 ##------------------------------------------------------------------------------
-DOCKER_IMAGE        = rustembedded/osdev-utils
-DOCKER_CMD          = docker run -t --rm -v $(shell pwd):/work/tutorial -w /work/tutorial
-DOCKER_CMD_INTERACT = $(DOCKER_CMD) -i
+DOCKER_IMAGE          = rustembedded/osdev-utils
+DOCKER_CMD            = docker run -t --rm -v $(shell pwd):/work/tutorial -w /work/tutorial
+DOCKER_CMD_INTERACT   = $(DOCKER_CMD) -i
+DOCKER_ARG_DIR_COMMON = -v $(shell pwd)/common:/work/common
 
 DOCKER_QEMU  = $(DOCKER_CMD_INTERACT) $(DOCKER_IMAGE)
 DOCKER_TOOLS = $(DOCKER_CMD) $(DOCKER_IMAGE)
+DOCKER_TEST  = $(DOCKER_CMD) $(DOCKER_ARG_DIR_COMMON) $(DOCKER_IMAGE)
 
 
 
@@ -153,3 +156,18 @@ nm: $(KERNEL_ELF)
 ##------------------------------------------------------------------------------
 check:
 	@RUSTFLAGS="$(RUSTFLAGS)" $(CHECK_CMD) --message-format=json
+
+
+##--------------------------------------------------------------------------------------------------
+## Testing targets
+##--------------------------------------------------------------------------------------------------
+.PHONY: test test_boot
+
+##------------------------------------------------------------------------------
+## Run boot test
+##------------------------------------------------------------------------------
+test_boot: $(KERNEL_BIN)
+	$(call colorecho, "\nBoot test - $(BSP)")
+	@$(DOCKER_TEST) $(EXEC_TEST_DISPATCH) $(EXEC_QEMU) $(QEMU_RELEASE_ARGS) -kernel $(KERNEL_BIN)
+
+test: test_boot

@@ -105,9 +105,10 @@
 
 mod bsp;
 mod console;
-mod cpu;
 mod panic_wait;
 mod print;
+
+use bsp::cpu;
 
 /// Early init code.
 ///
